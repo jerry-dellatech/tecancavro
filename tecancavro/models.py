@@ -39,9 +39,9 @@ class XCaliburD(Syringe):
                    30: 70, 31: 60, 32: 50, 33: 40, 34: 30, 35: 20, 36: 18,
                    37: 16, 38: 14, 39: 12, 40: 10}
 
-    def __init__(self, com_link, num_ports=9, syringe_ul=1000, direction='CW',
-                 microstep=False, waste_port=9, slope=14, init_force=0,
-                 debug=False, debug_log_path='.'):
+    def __init__(self, com_link, num_ports=3, syringe_ul=10000, direction='CW',
+                 microstep=False, waste_port=2, slope=14, init_force=0,
+                 debug=True, debug_log_path='.'):
         """
         Object initialization function.
 
@@ -861,9 +861,9 @@ class XCaliburD(Syringe):
         if microstep is None:
             microstep = self.state['microstep']
         if microstep:
-            steps = volume_ul * (24000/self.syringe_ul)
+            steps = int(volume_ul * (24000/self.syringe_ul))
         else:
-            steps = volume_ul * (3000/self.syringe_ul)
+            steps = int(volume_ul * (3000/self.syringe_ul))
         return steps
 
     def _simIncToPulses(self, speed_inc):

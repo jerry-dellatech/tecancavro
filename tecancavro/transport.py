@@ -49,7 +49,8 @@ def listSerialPorts():
         A list of available serial ports
     """
     if sys.platform.startswith('win'):
-        ports = ['COM' + str(i + 1) for i in range(256)]
+        #TODO: set range back to 256 for production code
+        ports = ['COM' + str(i + 1) for i in range(256)] 
 
     elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
         # this is to exclude your current terminal "/dev/tty"
@@ -64,6 +65,7 @@ def listSerialPorts():
     result = []
     for port in ports:
         try:
+            # print(f'checking port {port}')
             s = serial.Serial(port)
             s.close()
             result.append(port)
@@ -90,9 +92,13 @@ class TecanAPISerial(TecanAPI):
         Returns list of (<ser_port>, <pump_config>, <pump_firmware_version>)
         tuples.
         '''
+        print('Starting findSerialPumps...')
         found_devices = []
         for port_path in listSerialPorts():
+            # print(f'Checking port {port_path}')
             for addr in tecan_addrs:
+                # print(f'Checking address {addr}')
+               
                 try:
                     p = cls(addr, port_path, ser_baud,
                             ser_timeout, max_attempts)
@@ -104,6 +110,7 @@ class TecanAPISerial(TecanAPI):
                         raise
                 except TecanAPITimeout:
                     pass
+        # print(f'devices found = {found_devices}')
         return found_devices
 
     def __init__(self, tecan_addr, ser_port, ser_baud, ser_timeout=0.1,

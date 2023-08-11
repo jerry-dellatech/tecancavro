@@ -13,6 +13,7 @@ def returnNodeXCaliburD():
 	return test0
 
 def findSerialPumps():
+    print("looking for pumps...")
     return TecanAPISerial.findSerialPumps()
 
 def getSerialPumps():
@@ -25,4 +26,14 @@ def getSerialPumps():
 
 
 if __name__ == '__main__':
-    print(findSerialPumps())
+    # print(findSerialPumps())
+    pumps = getSerialPumps()
+    pumps_dict = dict(pumps)
+    print(pumps_dict)
+    pump1 = pumps_dict['COM13']
+    pump1.init(in_port=1, out_port=3)
+    pump1.extract(1,2000)
+    pump1.dispense(3,2000)
+    delay = pump1.executeChain()
+    pump1.waitReady(delay)
+    print("done")
