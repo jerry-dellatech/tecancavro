@@ -49,8 +49,13 @@ def listSerialPorts():
         A list of available serial ports
     """
     if sys.platform.startswith('win'):
-        #TODO: set range back to 256 for production code
         ports = ['COM' + str(i + 1) for i in range(256)] 
+
+    elif sys.platform.startswith('rp2'):
+        # Pi pico or similar
+        from machine import UART
+         
+        ports = ['uart0','uart1']
 
     elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
         # this is to exclude your current terminal "/dev/tty"
@@ -170,6 +175,7 @@ class TecanAPISerial(TecanAPI):
         if self.ser_port not in reg:
             reg[port] = {}
             reg[port]['info'] = {k: v for k, v in self.ser_info.items()}
+            # TODO: change this to use machine.UART
             reg[port]['_ser'] = serial.Serial(port=port,
                                     baudrate=reg[port]['info']['baud'],
                                     timeout=reg[port]['info']['timeout'])
@@ -199,7 +205,7 @@ class TecanAPISerial(TecanAPI):
         except KeyError:
             pass
 
-
+'''
 class TecanAPINode(TecanAPI):
     """
     `TecanAPI` subclass for node-based serial bridge communication.
@@ -294,3 +300,4 @@ class TecanAPINode(TecanAPI):
             return json.loads(data)
         else:
             return None
+'''
