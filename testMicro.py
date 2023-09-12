@@ -2,6 +2,12 @@ from tecancavro.models import XCaliburD
 
 from tecancavro.transport import TecanAPIMicro
 
+import sys
+
+if sys.platform.startswith('win'):
+    import serial
+    # from tecancavro.tecanapi import TecanAPI, TecanAPITimeout
+
 # Functions to return instantiated XCaliburD objects for testing
 
 def returnSerialXCaliburD():

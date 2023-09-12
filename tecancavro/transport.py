@@ -19,7 +19,8 @@ import sys
 import time
 from random import getrandbits # used as alternative to uuid
 
-# import serial
+if sys.platform.startswith('win'):
+    import serial
 
 if sys.platform.startswith('rp2'):
         # Pi pico or similar
@@ -41,7 +42,7 @@ try:
 except:
     from time import sleep
 
-from .tecanapi import TecanAPI, TecanAPITimeout
+from tecancavro.tecanapi import TecanAPI, TecanAPITimeout
 
 # From http://stackoverflow.com/questions/12090503/
 #      listing-available-com-ports-with-python
