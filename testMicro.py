@@ -21,6 +21,7 @@ def getSerialPumps():
     (<serial port>, <instantiated XCaliburD>) tuples
     '''
     pump_list = findSerialPumps()
+    print(f'pump list = {pump_list}')
     return [(ser_port, XCaliburD(com_link=TecanAPISerial(0,
              ser_port, 9600))) for ser_port, _, _ in pump_list]
 
@@ -30,7 +31,7 @@ if __name__ == '__main__':
     pumps = getSerialPumps()
     pumps_dict = dict(pumps)
     print(pumps_dict)
-    pump1 = pumps_dict['COM13']
+    pump1 = pumps_dict['0']
     pump1.init(in_port=1, out_port=3)
     pump1.extract(1,2000)
     pump1.dispense(3,2000)
