@@ -33,7 +33,7 @@ print(uart0)
 # print(OEMcommand.hex())
 # written = uart0.write(OEMcommand)
 
-OEMcommand = b'\x02\x31\x31?76\x03c'
+OEMcommand = b'\x02\x31\x31?76\x03?'
 checksum = _buildChecksum(OEMcommand[:-1])
 print(f'checksum: {checksum}')
 print(OEMcommand.hex(' '))

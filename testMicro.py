@@ -1,12 +1,12 @@
 from tecancavro.models import XCaliburD
 
-from tecancavro.transport import TecanAPIMicro
+from tecancavro.transport import TecanAPIMicro, TecanAPISerial
 
 import sys
 
 if sys.platform.startswith('win'):
     import serial
-    # from tecancavro.tecanapi import TecanAPI, TecanAPITimeout
+    from tecancavro.tecanapi import TecanAPI, TecanAPITimeout
 
 # Functions to return instantiated XCaliburD objects for testing
 
@@ -20,7 +20,10 @@ def returnNodeXCaliburD():
 
 def findSerialPumps():
     print("looking for pumps...")
-    return TecanAPIMicro.findSerialPumps()
+    if sys.platform.startswith('win'):
+         return TecanAPISerial.findSerialPumps()
+    else: 
+        return TecanAPIMicro.findSerialPumps()
 
 def getSerialPumps():
     ''' Assumes that the pumps are XCaliburD pumps and returns a list of
@@ -37,7 +40,7 @@ if __name__ == '__main__':
     pumps = getSerialPumps()
     pumps_dict = dict(pumps)
     print(pumps_dict)
-    pump1 = pumps_dict['0']
+    pump1 = pumps_dict['COM13']
     pump1.init(in_port=1, out_port=3)
     pump1.extract(1,2000)
     pump1.dispense(3,2000)

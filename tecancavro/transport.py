@@ -13,14 +13,14 @@ which sends a command string (`cmd`) and returns a dictionary containing the
 
 """
 
-# import glob
 import sys
-# import uuid
 import time
 from random import getrandbits # used as alternative to uuid
 
 if sys.platform.startswith('win'):
     import serial
+    import glob
+    import uuid
 
 if sys.platform.startswith('rp2'):
         # Pi pico or similar
@@ -76,9 +76,10 @@ def listSerialPorts():
                 # print(f'checking port {port}')
                 s = serial.Serial(port)
                 s.close()
+                print(f'Found active port: {port}')
                 result.append(port)
             except (OSError, serial.SerialException):
-                print('got OSError in listSerialPorts')
+                # print('got OSError in listSerialPorts')
                 pass
     return result
 
@@ -231,129 +232,129 @@ class TecanAPIMicro(TecanAPI):
         except KeyError:
             pass
 
-# class TecanAPISerial(TecanAPI):
-#     """
-#     Wraps the TecanAPI class to provide serial communication encapsulation
-#     and management for the Tecan OEM API. Maps devices to a state-monitored
-#     dictionary, `ser_mapping`, which allows multiple Tecan devices to
-#     share a serial port (provided that the serial params are the same).
-#     """
+class TecanAPISerial(TecanAPI):
+    """
+    Wraps the TecanAPI class to provide serial communication encapsulation
+    and management for the Tecan OEM API. Maps devices to a state-monitored
+    dictionary, `ser_mapping`, which allows multiple Tecan devices to
+    share a serial port (provided that the serial params are the same).
+    """
 
-#     ser_mapping = {}
+    ser_mapping = {}
 
-#     @classmethod
-#     def findSerialPumps(cls, tecan_addrs=[0], ser_baud=9600, ser_timeout=0.2,
-#                         max_attempts=2):
-#         ''' Find any enumerated syringe pumps on the local com / serial ports.
+    @classmethod
+    def findSerialPumps(cls, tecan_addrs=[0], ser_baud=9600, ser_timeout=0.2,
+                        max_attempts=2):
+        ''' Find any enumerated syringe pumps on the local com / serial ports.
 
-#         Returns list of (<ser_port>, <pump_config>, <pump_firmware_version>)
-#         tuples.
-#         '''
-#         print('Starting findSerialPumps...')
-#         found_devices = []
-#         for port_path in listSerialPorts():
-#             # print(f'Checking port {port_path}')
-#             for addr in tecan_addrs:
-#                 # print(f'Checking address {addr}')
+        Returns list of (<ser_port>, <pump_config>, <pump_firmware_version>)
+        tuples.
+        '''
+        print('Starting findSerialPumps...')
+        found_devices = []
+        for port_path in listSerialPorts():
+            print(f'Checking port {port_path}')
+            for addr in tecan_addrs:
+                print(f'Checking address {addr}')
                
-#                 try:
-#                     p = cls(addr, port_path, ser_baud,
-#                             ser_timeout, max_attempts)
-#                     config = p.sendRcv('?76')['data']
-#                     fw_version = p.sendRcv('&')['data']
-#                     found_devices.append((port_path, config, fw_version))
-#                 except OSError as e:
-#                     if e.errno != 16:  # Resource busy
-#                         raise
-#                 except TecanAPITimeout:
-#                     pass
-#         # print(f'devices found = {found_devices}')
-#         return found_devices
+                try:
+                    p = cls(addr, port_path, ser_baud,
+                            ser_timeout, max_attempts)
+                    config = p.sendRcv('?76')['data']
+                    fw_version = p.sendRcv('&')['data']
+                    found_devices.append((port_path, config, fw_version))
+                except OSError as e:
+                    if e.errno != 16:  # Resource busy
+                        raise
+                except TecanAPITimeout:
+                    pass
+        print(f'devices found = {found_devices}')
+        return found_devices
 
-#     def __init__(self, tecan_addr, ser_port, ser_baud, ser_timeout=0.1,
-#                  max_attempts=5):
+    def __init__(self, tecan_addr, ser_port, ser_baud, ser_timeout=0.1,
+                 max_attempts=5):
 
-#         super(TecanAPISerial, self).__init__(tecan_addr)
+        super(TecanAPISerial, self).__init__(tecan_addr)
 
-#         self.id_ = str(uuid.uuid4())
-#         self.ser_port = ser_port
-#         self.ser_info = {
-#             'baud': ser_baud,
-#             'timeout': ser_timeout,
-#             'max_attempts': max_attempts
-#         }
-#         self._registerSer()
+        self.id_ = str(uuid.uuid4())
+        self.ser_port = ser_port
+        self.ser_info = {
+            'baud': ser_baud,
+            'timeout': ser_timeout,
+            'max_attempts': max_attempts
+        }
+        self._registerSer()
 
-#     def sendRcv(self, cmd):
-#         attempt_num = 0
-#         while attempt_num < self.ser_info['max_attempts']:
-#             try:
-#                 attempt_num += 1
-#                 if attempt_num == 1:
-#                     frame_out = self.emitFrame(cmd)
-#                 else:
-#                     frame_out = self.emitRepeat()
-#                 self._sendFrame(frame_out)
-#                 frame_in = self._receiveFrame()
-#                 if frame_in:
-#                     return frame_in
-#                 sleep(0.05 * attempt_num)
-#             except serial.SerialException:
-#                 sleep(0.2)
-#         raise(TecanAPITimeout('Tecan serial communication exceeded max '
-#                               'attempts [{0}]'.format(
-#                               self.ser_info['max_attempts'])))
+    def sendRcv(self, cmd):
+        attempt_num = 0
+        while attempt_num < self.ser_info['max_attempts']:
+            try:
+                attempt_num += 1
+                if attempt_num == 1:
+                    frame_out = self.emitFrame(cmd)
+                else:
+                    frame_out = self.emitRepeat()
+                self._sendFrame(frame_out)
+                frame_in = self._receiveFrame()
+                if frame_in:
+                    return frame_in
+                sleep(0.05 * attempt_num)
+            except serial.SerialException:
+                sleep(0.2)
+        raise(TecanAPITimeout('Tecan serial communication exceeded max '
+                              'attempts [{0}]'.format(
+                              self.ser_info['max_attempts'])))
 
-#     def _sendFrame(self, frame):
-#         self._ser.write(frame)
+    def _sendFrame(self, frame):
+        self._ser.write(frame)
 
-#     def _receiveFrame(self):
-#         raw_data = b''
-#         raw_byte = self._ser.read()
-#         while raw_byte != b'':
-#             raw_data += raw_byte
-#             raw_byte = self._ser.read()
-#         return self.parseFrame(raw_data)
+    def _receiveFrame(self):
+        raw_data = b''
+        raw_byte = self._ser.read()
+        while raw_byte != b'':
+            raw_data += raw_byte
+            raw_byte = self._ser.read()
+        return self.parseFrame(raw_data)
 
-#     def _registerSer(self):
-#         """
-#         Checks to see if another TecanAPISerial instance has registered the
-#         same serial port in `ser_mapping`. If there is a conflict, checks to
-#         see if the parameters match, and if they do, shares the connection.
-#         Otherwise it raises a `serial.SerialException`.
-#         """
-#         reg = TecanAPISerial.ser_mapping
-#         port = self.ser_port
-#         if self.ser_port not in reg:
-#             reg[port] = {}
-#             reg[port]['info'] = {k: v for k, v in self.ser_info.items()}
-#             # TODO: change this to use machine.UART
-#             reg[port]['_ser'] = serial.Serial(port=port,
-#                                     baudrate=reg[port]['info']['baud'],
-#                                     timeout=reg[port]['info']['timeout'])
-#             reg[port]['_devices'] = [self.id_]
-#         else:
-#             if len(set(self.ser_info.items()) &
-#                set(reg[port]['info'].items())) != 3:
-#                 raise serial.SerialException('TecanAPISerial conflict: ' \
-#                     'another device is already registered to {0} with ' \
-#                     'different parameters'.format(port))
-#             else:
-#                 reg[port]['_devices'].append(self.id_)
-#         self._ser = reg[port]['_ser']
+    def _registerSer(self):
+        """
+        Checks to see if another TecanAPISerial instance has registered the
+        same serial port in `ser_mapping`. If there is a conflict, checks to
+        see if the parameters match, and if they do, shares the connection.
+        Otherwise it raises a `serial.SerialException`.
+        """
+        reg = TecanAPISerial.ser_mapping
+        port = self.ser_port
+        if self.ser_port not in reg:
+            reg[port] = {}
+            reg[port]['info'] = {k: v for k, v in self.ser_info.items()}
+            # TODO: change this to use machine.UART
+            reg[port]['_ser'] = serial.Serial(port=port,
+                                    baudrate=reg[port]['info']['baud'],
+                                    timeout=reg[port]['info']['timeout'])
+            reg[port]['_devices'] = [self.id_]
+        else:
+            if len(set(self.ser_info.items()) &
+               set(reg[port]['info'].items())) != 3:
+                raise serial.SerialException('TecanAPISerial conflict: ' \
+                    'another device is already registered to {0} with ' \
+                    'different parameters'.format(port))
+            else:
+                reg[port]['_devices'].append(self.id_)
+        self._ser = reg[port]['_ser']
 
-#     def __del__(self):
-#         """
-#         Cleanup serial port registration on delete
-#         """
-#         port_reg = TecanAPISerial.ser_mapping[self.ser_port]
-#         try:
-#             dev_list = port_reg['_devices']
-#             ind = dev_list.index(self.id_)
-#             del dev_list[ind]
-#             if len(dev_list) == 0:
-#                 port_reg['_ser'].close()
-#                 del port_reg, TecanAPISerial.ser_mapping[self.ser_port]
-#         except KeyError:
-#             pass
+    def __del__(self):
+        """
+        Cleanup serial port registration on delete
+        """
+        port_reg = TecanAPISerial.ser_mapping[self.ser_port]
+        try:
+            dev_list = port_reg['_devices']
+            ind = dev_list.index(self.id_)
+            del dev_list[ind]
+            if len(dev_list) == 0:
+                port_reg['_ser'].close()
+                del port_reg, TecanAPISerial.ser_mapping[self.ser_port]
+        except KeyError:
+            pass
 
