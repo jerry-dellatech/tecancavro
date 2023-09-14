@@ -14,35 +14,18 @@ which sends a command string (`cmd`) and returns a dictionary containing the
 """
 
 import sys
-import time
 from random import getrandbits # used as alternative to uuid
 
 if sys.platform.startswith('win'):
     import serial
-    import glob
     import uuid
+    from time import sleep
 
 if sys.platform.startswith('rp2'):
         # Pi pico or similar
         from machine import UART, Pin
         from time import sleep
          
-# try:
-#     import urllib.request as urllib2
-# except ImportError:
-#     import urllib2
-
-try:
-    import simplejson as json
-except:
-    import json
-
-try:
-    from gevent import monkey; monkey.patch_all(thread=False)
-    from gevent import sleep
-except:
-    from time import sleep
-
 from tecancavro.tecanapi import TecanAPI, TecanAPITimeout
 
 # From http://stackoverflow.com/questions/12090503/
@@ -176,12 +159,6 @@ class TecanAPIMicro(TecanAPI):
         self._ser.write(frame)
 
     def _receiveFrame(self):
-        # print(f'self._ser = {self._ser}')
-        # raw_data = b''
-        # raw_byte = self._ser.read()
-        # while raw_byte != b'':
-        #     raw_data += raw_byte
-        #     raw_byte = self._ser.read()
         raw_data = self._ser.read(50)
         # print(f'raw_data return from _receiveFrame: {raw_data}')
         return self.parseFrame(raw_data)
@@ -214,10 +191,6 @@ class TecanAPIMicro(TecanAPI):
             # print(f"registered serial port after init: {reg[port]['_ser']}")
             reg[port]['_devices'] = [self.id_]
         else:
-            # print('In else statement.')
-            # print(f'Set(self.ser_info.items()): {set(self.ser_info.items())}')
-            # print(f"Set(reg[port]['info'].items()): {set(reg[port]['info'].items())}")
-            # print(f"len of set intersection = {len(set(self.ser_info.items()) & set(reg[port]['info'].items()))}")
             if len(set(self.ser_info.items()) & set(reg[port]['info'].items())) != 3:
                 raise Exception('TecanAPISerial conflict: ' \
                     'another device is already registered to {0} with ' \
@@ -338,7 +311,6 @@ class TecanAPISerial(TecanAPI):
         if self.ser_port not in reg:
             reg[port] = {}
             reg[port]['info'] = {k: v for k, v in self.ser_info.items()}
-            # TODO: change this to use machine.UART
             reg[port]['_ser'] = serial.Serial(port=port,
                                     baudrate=reg[port]['info']['baud'],
                                     timeout=reg[port]['info']['timeout'])
