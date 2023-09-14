@@ -33,14 +33,14 @@ print(uart0)
 # print(OEMcommand.hex())
 # written = uart0.write(OEMcommand)
 
-OEMcommand = b'\x02\x31\x31?76\x03?'
+OEMcommand = b'\x0211?76\x03?'
 checksum = _buildChecksum(OEMcommand[:-1])
 print(f'checksum: {checksum}')
 print(OEMcommand.hex(' '))
 written = uart0.write(OEMcommand)
 
 print(f'{written} bytes were written')
-sleep(0.5) 
+sleep(0.1) 
 resp = uart0.read(50)
 
 if resp is not None:

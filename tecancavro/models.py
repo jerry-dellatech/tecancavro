@@ -41,7 +41,7 @@ class XCaliburD(Syringe):
 
     def __init__(self, com_link, num_ports=3, syringe_ul=10000, direction='CW',
                  microstep=False, waste_port=2, slope=14, init_force=0,
-                 debug=True, debug_log_path='.'):
+                 debug=False, debug_log_path='.'):
         """
         Object initialization function.
 

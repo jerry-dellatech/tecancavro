@@ -1,4 +1,5 @@
-frame = [2, 49, 49, 63, 55, 54, 3, 63]
+# frame = [2, 49, 49, 63, 55, 54, 3, 63]
+frame = [ 0x02, 0x31, 0x31, 0x3f, 0x37, 0x36, 0x03, 0x3f]
 bFrame = bytes(frame)
 print(bFrame)
 print(bFrame.hex(' '))

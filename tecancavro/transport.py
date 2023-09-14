@@ -25,6 +25,7 @@ if sys.platform.startswith('win'):
 if sys.platform.startswith('rp2'):
         # Pi pico or similar
         from machine import UART, Pin
+        from time import sleep
          
 # try:
 #     import urllib.request as urllib2
@@ -95,7 +96,7 @@ class TecanAPIMicro(TecanAPI):
     ser_mapping = {}
 
     @classmethod
-    def findSerialPumps(cls, tecan_addrs=[1,2], ser_baud=9600, ser_timeout=500,
+    def findSerialPumps(cls, tecan_addrs=[0], ser_baud=9600, ser_timeout=500,
                         max_attempts=2):
         ''' Find any enumerated syringe pumps on the serial ports.
 
@@ -112,25 +113,25 @@ class TecanAPIMicro(TecanAPI):
                 print(f'Checking address {addr}...')
                
                 try:
-                    print(f'try block: attempting to open port...')
+                    # print(f'try block: attempting to open port...')
                     p = cls(addr, port_path, ser_baud,
                             ser_timeout, max_attempts)
-                    print('Attempting to read pump configuration...')
+                    # print('Attempting to read pump configuration...')
                     config = p.sendRcv('?76')['data']
-                    print(f'pump configuration: {config}')
+                    # print(f'pump configuration: {config}')
                     fw_version = p.sendRcv('&')['data']
                     found_devices.append((port_path, config, fw_version))
                 except OSError as e:
                     if e.errno != 16:  # Resource busy
                         raise
                 except TecanAPITimeout as err:
-                    print(err)
+                    # print(err)
                     pass
-        print(f'devices found = {found_devices}')
+        # print(f'devices found = {found_devices}')
         return found_devices
 
     def __init__(self, tecan_addr, ser_port, ser_baud, ser_timeout=500,
-                 max_attempts=5):
+                 max_attempts=2):
 
         super(TecanAPIMicro, self).__init__(tecan_addr)
 
@@ -145,19 +146,19 @@ class TecanAPIMicro(TecanAPI):
         self._registerSer()
 
     def sendRcv(self, cmd):
-        print("starting sendRcv...")
+        # print("starting sendRcv...")
         attempt_num = 0
         while attempt_num < self.ser_info['max_attempts']:
             try:
                 attempt_num += 1
-                print(f'Communication attempt num {attempt_num}')
+                # print(f'Communication attempt num {attempt_num}')
                 if attempt_num == 1:
                     frame_out = self.emitFrame(cmd)
-                    print(f'Frame to be sent: {frame_out}')
                 else:
                     frame_out = self.emitRepeat()
-                print(self)
+                # print(self)
                 self._sendFrame(frame_out)
+                sleep(0.1)
                 frame_in = self._receiveFrame()
                 if frame_in:
                     return frame_in
@@ -171,15 +172,18 @@ class TecanAPIMicro(TecanAPI):
         raise(TecanAPITimeout('Tecan timeout error'))
 
     def _sendFrame(self, frame):
+        # print(f'frame to be sent: {frame.hex(" ")}')
         self._ser.write(frame)
 
     def _receiveFrame(self):
-        print(f'self._ser = {self._ser}')
-        raw_data = b''
-        raw_byte = self._ser.read()
-        while raw_byte != b'':
-            raw_data += raw_byte
-            raw_byte = self._ser.read()
+        # print(f'self._ser = {self._ser}')
+        # raw_data = b''
+        # raw_byte = self._ser.read()
+        # while raw_byte != b'':
+        #     raw_data += raw_byte
+        #     raw_byte = self._ser.read()
+        raw_data = self._ser.read(50)
+        # print(f'raw_data return from _receiveFrame: {raw_data}')
         return self.parseFrame(raw_data)
 
     def _registerSer(self):
@@ -191,11 +195,13 @@ class TecanAPIMicro(TecanAPI):
         """
         reg = TecanAPIMicro.ser_mapping
         port = self.ser_port
-        print(f'In _registerSer. Port = {port}')
+        # print(f'In _registerSer. Port = {port}')
+        # print(f'reg = {reg}')
         if self.ser_port not in reg:
+            # print(f'{self.ser_port} not in reg. Attemping to register port.')
             reg[port] = {}
             reg[port]['info'] = {k: v for k, v in self.ser_info.items()}
-            print( 'registered port info:', reg[port]['info'])
+            # print( 'registered port info:', reg[port]['info'])
             uart = UART(int(port[-1]),9600) # last character of port name is port number
             uart.init(
                     baudrate=reg[port]['info']['baud'],
@@ -205,12 +211,15 @@ class TecanAPIMicro(TecanAPI):
                     flow = 0
                     ) # note pin numbers are logical GPnn, not physical pins 1..40
             reg[port]['_ser'] = uart
-            print(f"registered serial port after init: {reg[port]['_ser']}")
+            # print(f"registered serial port after init: {reg[port]['_ser']}")
             reg[port]['_devices'] = [self.id_]
         else:
-            if len(set(self.ser_info.items()) &
-               set(reg[port]['info'].items())) != 3:
-                raise serial.SerialException('TecanAPISerial conflict: ' \
+            # print('In else statement.')
+            # print(f'Set(self.ser_info.items()): {set(self.ser_info.items())}')
+            # print(f"Set(reg[port]['info'].items()): {set(reg[port]['info'].items())}")
+            # print(f"len of set intersection = {len(set(self.ser_info.items()) & set(reg[port]['info'].items()))}")
+            if len(set(self.ser_info.items()) & set(reg[port]['info'].items())) != 3:
+                raise Exception('TecanAPISerial conflict: ' \
                     'another device is already registered to {0} with ' \
                     'different parameters'.format(port))
             else:
@@ -268,7 +277,7 @@ class TecanAPISerial(TecanAPI):
                         raise
                 except TecanAPITimeout:
                     pass
-        print(f'devices found = {found_devices}')
+        # print(f'devices found = {found_devices}')
         return found_devices
 
     def __init__(self, tecan_addr, ser_port, ser_baud, ser_timeout=0.1,
@@ -306,6 +315,7 @@ class TecanAPISerial(TecanAPI):
                               self.ser_info['max_attempts'])))
 
     def _sendFrame(self, frame):
+        # print(f'frame to be sent: {frame.hex(" ")}')
         self._ser.write(frame)
 
     def _receiveFrame(self):
