@@ -244,7 +244,7 @@ class XCaliburD(Syringe):
             remainder_ul = volume_ul % self.syringe_ul
             self.changePort(out_port, from_port=in_port)
             self.movePlungerAbs(0)
-            for x in xrange(num_rounds):
+            for x in range(num_rounds):
                 self.changePort(in_port, from_port=out_port)
                 self.movePlungerAbs(3000)
                 self.changePort(out_port, from_port=in_port)
@@ -613,8 +613,8 @@ class XCaliburD(Syringe):
 
         if not 0 <= input_pin < 2:
             raise(ValueError('`input_pin` [{0}] must be between 0 and 2'
-                             ''.format(input_sig)))
-        cmd_string = 'H{0}'.format(input_sig)
+                             ''.format(input_pin)))
+        cmd_string = 'H{0}'.format(input_pin)
         return self.sendRcv(cmd_string)
 
     #########################################################################
